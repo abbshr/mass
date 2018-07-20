@@ -1,0 +1,40 @@
+{
+  "name": "mass",
+  "version": "2.0.0",
+  "description": "an universal data processing and task scheduling framework",
+  "main": "index.js",
+  "author": "ran <rankong@wacai.com>",
+  "license": "MIT",
+  "private": false,
+  "dependencies": {
+    "@wac/raw-redis": "^1.0.0",
+    "chance": "^1.0.16",
+    "cron-parser": "^2.5.0",
+    "p-queue": "^2.4.2",
+    "safe-timers": "^1.1.0",
+    "sinek": "^6.14.0"
+  },
+  "scripts": {
+    "test": "jest --detectOpenHandles"
+  },
+  "jest": {
+    "verbose": true,
+    "notify": true,
+    "collectCoverage": true,
+    "testEnvironment": "node",
+    "modulePaths": [
+      "<rootDir>"
+    ],
+    "roots": [
+      "<rootDir>/__specs__"
+    ],
+    "coverageReporters": [
+      "html",
+      "text",
+      "text-summary"
+    ]
+  },
+  "devDependencies": {
+    "jest": "^23.4.1"
+  }
+}
