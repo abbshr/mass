@@ -234,7 +234,7 @@ describe("lib/scheduler.js", () => {
     });
   });
 
-  it("default failover strategy should re-schedule the task when it not exceed the max retry attemp", async () => {
+  it("default fault tolerate strategy should re-schedule the task when it not exceed the max retry attemp", async () => {
     const sched = new MassTaskScheduler({});
 
     const store = { failed: 0 };
@@ -258,7 +258,7 @@ describe("lib/scheduler.js", () => {
     expect(task.state).toBe(task.STATE.FINISH);
   });
 
-  it("default failover strategy will no longer re-scheduler the task and add it to dead-letter queue when it exceed the max retry attemp", async () => {
+  it("default fault tolerate strategy will no longer re-scheduler the task and add it to dead-letter queue when it exceed the max retry attemp", async () => {
     const sched = new MassTaskScheduler({});
 
     const store = { failed: 0 };
