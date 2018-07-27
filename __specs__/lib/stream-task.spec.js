@@ -4,6 +4,10 @@ const MassTaskScheduler = require("../../lib/scheduler");
 const MassBus = require("../../lib/bus");
 
 describe("stream task", () => {
+  beforeAll(async () => {
+    await require("../../lib/redis").connect({ cfg: { schema: "client:" } });
+  });
+
   it("task.at_every() (periodic) strategy should be disabled in stream task", () => {
     const streamTask = new MassStreamTask();
     expect(() => streamTask.at_every()).toThrow();

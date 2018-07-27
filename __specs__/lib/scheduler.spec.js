@@ -1,24 +1,11 @@
-jest.mock("@wac/raw-redis", () => {
-  const { EventEmitter } = require("events");
-  const store = new EventEmitter();
-
-  return async () => {
-    return new (class extends EventEmitter {
-      async subscribe(chan) {}
-      async publish(chan, data) {
-        store.emit("message", "client:mass-v2:chan", data);
-      }
-      on(...args) {
-        store.on(...args);
-      }
-    });
-  };
-});
-
 const MassTaskScheduler = require("../../lib/scheduler");
 const MassTask = require("../../lib/task");
 
 describe("lib/scheduler.js", () => {
+  beforeAll(async () => {
+    await require("../../lib/redis").connect({ cfg: { schema: "client:" } });
+  });
+
   it("should throws if cfg inst provide", () => {
     expect(() => new MassTaskScheduler()).toThrow();
   });
