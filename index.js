@@ -15,7 +15,7 @@ const Mass = {
   MassTaskScheduler: require("./lib/scheduler"),
   MassBus: require("./lib/bus"),
   Env: require("./lib/env"),
-  operators: require("./lib/operators").loadall(),
+  operators: require("./lib/operators"),
   // MassDataSet: require("./job/data"),
   ready: false,
 };

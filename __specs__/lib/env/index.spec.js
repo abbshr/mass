@@ -1,4 +1,3 @@
-require("../../../lib/operators").loadall();
 const Env = require("../../../lib/env");
 
 describe("stream env", () => {
