@@ -28,7 +28,8 @@
       "<rootDir>"
     ],
     "roots": [
-      "<rootDir>/__specs__"
+      "<rootDir>/__specs__",
+      "<rootDir>/__mocks__"
     ],
     "coverageReporters": [
       "html",

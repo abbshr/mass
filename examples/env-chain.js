@@ -14,8 +14,8 @@
       limit: 20,
     }));
 
-    const calc = src_1
-      .tap(elem => console.log("Tap", elem));
+    const calc = src_1.tap(elem => console.log("Tap", elem));
+
     src_2.pipe(calc);
 
     await Promise.all([
@@ -23,7 +23,7 @@
         console.log("CHECK_1:", elem);
         return elem.record > 600 || elem.record <= 1;
       })),
-
+  
       calc.to(new operators.ValidateSink(null, elem => {
         console.log("CHECK_2:", elem);
         return elem.record < 1000;
