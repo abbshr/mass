@@ -3,36 +3,31 @@
 
   const scheduler = new Mass.MassTaskScheduler({ busConfig: { cfg: { schema: "client:bus:" } } });
   const task = scheduler.spawnTask(Mass.MassStreamTask, {
-    taskId: 0xFF,
+    // taskId: 0xFF,
     taskName: "ran-aizen's task",
     async streamProcessExecutor(env, bus) {
-      const src_1 = env.from(new env.operators.GeneratorSource(null, {
+
+      const storeValue = await this.getStore("k");
+
+      const src_1 = env.from(env.operators.GeneratorSource.create({
         emitter() { return Math.random() * 1000 >> 0; },
-        frequency: 2000,
-        limit: 5,
+        frequency: 2000, limit: 5,
       }));
   
-      const src_2 = env.from(new env.operators.GeneratorSource(null, {
-        frequency: 1000,
-        limit: 6,
+      const src_2 = env.from(env.operators.GeneratorSource.create({
+        frequency: 1000, limit: 6,
       }));
   
-      const calc = src_1.tap(elem => console.log("Tap", elem));
+      const calc = src_1.tap(elem => console.log("Tap", elem, storeValue));
   
       src_2.pipe(calc);
   
-      calc.to(new env.operators.ValidateSink(null, elem => {
-        console.log("CHECK_1:", elem);
-        return elem.record > 600 || elem.record <= 1;
-      }));
-  
-      calc.to(new env.operators.ValidateSink(null, elem => {
-        console.log("CHECK_2:", elem);
-        return elem.record < 1000;
-      }));
+      calc.to(env.operators.ValidateSink.create(elem => elem.record > 600 || elem.record <= 1));
+      calc.to(env.operators.ValidateSink.create(elem => elem.record < 1000));
     },
   });
 
-  task.sched();
+  task.grab();
   await scheduler.bootstrap();
-})();
+})()
+.catch(err => console.log("throw:", err));
