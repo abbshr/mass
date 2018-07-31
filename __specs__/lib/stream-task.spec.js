@@ -2,6 +2,8 @@ const MassStreamTask = require("../../lib/stream-task");
 const Env = require("../../lib/env");
 const MassTaskScheduler = require("../../lib/scheduler");
 const MassBus = require("../../lib/bus");
+const { EventEmitter } = require("events");
+const pEvent = require("p-event");
 
 describe("stream task", () => {
   beforeAll(async () => {
@@ -19,6 +21,7 @@ describe("stream task", () => {
       taskId: "test-stream-task",
       async streamProcessExecutor(env, bus) {
         expect(env).toBeInstanceOf(Env);
+        expect(env).toBeInstanceOf(Promise);
         expect(bus).toBeInstanceOf(MassBus);
         done();
       },
@@ -26,5 +29,62 @@ describe("stream task", () => {
 
     streamTask.grab();
     sched.bootstrap();
+  });
+
+  // it("ResourceManager.prototype.free() should be called in the same event loop tick and ResourceManager.prototype.waitExtremityEnvsRelease() should not be called if task.streamProcessExecutor() throws", async () => {
+  //   const sched = new MassTaskScheduler({});
+  //   const streamTask = sched.spawnTask(MassStreamTask, {
+  //     taskId: "test-stream-task",
+  //     async streamProcessExecutor(env, bus) {
+  //       expect(env).toBeInstanceOf(Env);
+  //       expect(env).toBeInstanceOf(Promise);
+  //       expect(bus).toBeInstanceOf(MassBus);
+  //       done();
+  //     },
+  //   });
+
+  //   streamTask.grab();
+  //   sched.bootstrap();
+  // });
+
+  // it("stream task should wait for all operators to exit to complete the task", async () => {
+
+  // });
+
+  it("if there are at least one end-op still working fine, stream task won't exit even if some ops exit", async () => {
+    const sched = new MassTaskScheduler({});
+    let pipeline_1, pipeline_2;
+    const em = new EventEmitter();
+    const streamTask = sched.spawnTask(MassStreamTask, {
+      taskId: "test-stream-task",
+      async streamProcessExecutor(env, bus) {
+        pipeline_1 = env
+          .generate({ limit: 1, frequency: 100 })
+          .validate(elem => elem.record === 1);
+
+        pipeline_2 = env
+          .generate({ limit: 3, frequency: 1000 })
+          .tap(elem => console.log("PIPELINE 2 GOT:", elem))
+          .validate(elem => elem.record === 1);
+        em.emit("ok");
+      },
+    });
+
+    streamTask.grab();
+    await sched.bootstrap();
+    await pEvent(em, "ok");
+
+    await pipeline_1;
+    expect(pipeline_1.success).toBeTruthy();
+    expect(pipeline_1.exited).toBeTruthy();
+    expect(pipeline_2.exited).toBeFalsy();
+    expect(streamTask.state).toBe(streamTask.STATE.RUN);
+
+    await pipeline_2;
+    expect(pipeline_2.success).toBeTruthy();
+    expect(pipeline_2.exited).toBeTruthy();
+
+    await sched.onIdle();
+    expect(streamTask.state).toBe(streamTask.STATE.FINISH);
   });
 });
