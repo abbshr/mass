@@ -59,11 +59,12 @@ describe("stream task", () => {
       taskId: "test-stream-task",
       async streamProcessExecutor(env, bus) {
         pipeline_1 = env
-          .generate({ limit: 1, frequency: 100 })
-          .validate(elem => elem.record === 1);
+          .from(env.operators.GeneratorSource.create({ limit: 1, frequency: 100 }))
+          .compute(env.operators.TapCalculator.create(elem => console.log("PIPELINE 1 GOT:", elem)))
+          .to(env.operators.ValidateSink.create(elem => elem.record === 1));
 
         pipeline_2 = env
-          .generate({ limit: 3, frequency: 1000 })
+          .generate({ limit: 1, frequency: 2000 })
           .tap(elem => console.log("PIPELINE 2 GOT:", elem))
           .validate(elem => elem.record === 1);
         em.emit("ok");
