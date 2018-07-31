@@ -15,7 +15,7 @@ describe("stream task", () => {
     expect(() => streamTask.at_every()).toThrow();
   });
 
-  it("task.env should be an instance of Env", done => {
+  it("task.env should be an instance of Env", async () => {
     const sched = new MassTaskScheduler({});
     const streamTask = sched.spawnTask(MassStreamTask, {
       taskId: "test-stream-task",
@@ -23,12 +23,12 @@ describe("stream task", () => {
         expect(env).toBeInstanceOf(Env);
         expect(env).toBeInstanceOf(Promise);
         expect(bus).toBeInstanceOf(MassBus);
-        done();
       },
     });
 
     streamTask.grab();
-    sched.bootstrap();
+    await sched.bootstrap();
+    await sched.onIdle();
   });
 
   // it("ResourceManager.prototype.free() should be called in the same event loop tick and ResourceManager.prototype.waitExtremityEnvsRelease() should not be called if task.streamProcessExecutor() throws", async () => {
@@ -67,6 +67,7 @@ describe("stream task", () => {
           .generate({ limit: 1, frequency: 2000 })
           .tap(elem => console.log("PIPELINE 2 GOT:", elem))
           .validate(elem => elem.record === 1);
+
         em.emit("ok");
       },
     });
