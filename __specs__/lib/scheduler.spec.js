@@ -1,24 +1,11 @@
-jest.mock("@wac/raw-redis", () => {
-  const { EventEmitter } = require("events");
-  const store = new EventEmitter();
-
-  return async () => {
-    return new (class extends EventEmitter {
-      async subscribe(chan) {}
-      async publish(chan, data) {
-        store.emit("message", "client:mass-v2:chan", data);
-      }
-      on(...args) {
-        store.on(...args);
-      }
-    });
-  };
-});
-
 const MassTaskScheduler = require("../../lib/scheduler");
 const MassTask = require("../../lib/task");
 
 describe("lib/scheduler.js", () => {
+  beforeAll(async () => {
+    await require("../../lib/redis").connect({ cfg: { schema: "client:" } });
+  });
+
   it("should throws if cfg inst provide", () => {
     expect(() => new MassTaskScheduler()).toThrow();
   });
@@ -234,7 +221,7 @@ describe("lib/scheduler.js", () => {
     });
   });
 
-  it("default failover strategy should re-schedule the task when it not exceed the max retry attemp", async () => {
+  it("default fault tolerate strategy should re-schedule the task when it not exceed the max retry attemp", async () => {
     const sched = new MassTaskScheduler({});
 
     const store = { failed: 0 };
@@ -258,7 +245,7 @@ describe("lib/scheduler.js", () => {
     expect(task.state).toBe(task.STATE.FINISH);
   });
 
-  it("default failover strategy will no longer re-scheduler the task and add it to dead-letter queue when it exceed the max retry attemp", async () => {
+  it("default fault tolerate strategy will no longer re-scheduler the task and add it to dead-letter queue when it exceed the max retry attemp", async () => {
     const sched = new MassTaskScheduler({});
 
     const store = { failed: 0 };

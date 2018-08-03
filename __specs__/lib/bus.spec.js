@@ -1,20 +1,3 @@
-jest.mock("@wac/raw-redis", () => {
-  const { EventEmitter } = require("events");
-  const store = new EventEmitter();
-
-  return async () => {
-    return new (class extends EventEmitter {
-      async subscribe(chan) {}
-      async publish(chan, data) {
-        store.emit("message", "client:mass-v2:chan", data);
-      }
-      on(...args) {
-        store.on(...args);
-      }
-    });
-  };
-});
-
 const MassBus = require("../../lib/bus");
 
 describe("lib/bus.js", () => {
