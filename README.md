@@ -72,15 +72,265 @@ Mass v2 在与 v1 在能力差别上, 主要表现在:
 
 # 范例
 
+```js
+const Mass = require("@wac/mass");
+
+class MyScheduler extends Mass.MassTaskScheduler {
+
+}
+
+const scheduler = new MyScheduler(scheduler_cfg);
+
+class MyTask extends Mass.MassTask {
+  async executor(input, proceed, bus) {
+    const email = await createEmailContent();
+    const config = getEmailConfig();
+    await mailSender(email, config);
+  }
+}
+
+scheduler.spawnTask(MyTask, {
+  taskId: 0x00,
+  taskName: "mail-sender",
+  taskDescription: "a task run at every 9:00 am",
+})
+.at_every("0 9 * * *");
+
+class MyCalculator extends Mass.operators.Calculator {
+  
+}
+
+class MyEnv extends Mass.Env {
+
+}
+
+class MyStateAggregator extends Mass.states.StateAggregator {
+
+}
+
+class MyGen extends Mass.Gen {
+
+}
+
+class MyStreamTask extends Mass.MassStreamTask {
+  async streamProcessExecutor(env, bus) {
+    await env.from()
+      .mutate()
+      .filter()
+      .record()
+      .to();
+
+    const windowedStream = env.from().window().agg();
+    windowedStream
+      .use(env.states.GroupByStateAggregator, elem => elem.name)
+      .sum();
+
+    await windowedStream.to();
+  }
+}
+
+scheduler.spawnTask(MyStreamTask, {
+  taskId: 0x01,
+})
+.sched();
+
+await scheduler.bootstrap();
+```
+
 # 框架和约定
+
+框架提供两种编码习惯的选择.
+
+对于习惯 **配置化** 编码的开发者, 可以选择开箱即用模式, 因为框架里已经预置了所有 **可用的** 组件:
+
+```js
+const scheduler = new Mass.MassTaskScheduler(scheduler_cfg);
+scheduler.spawnTask(Mass.MassTask, {
+  async executor(input, proceed, bus) {}
+}).sched();
+
+scheduler.spawnTask(Mass.MassStreamTask, {
+  async streamProcessExecutor(env, bus) {}
+}).sched();
+```
+
+而对于那些习惯使用面向对象模式的开发者, 或者需要对预置策略进行一些自定义调整的使用者来说, 继承和重载的思路可能更适合一些:
+
+```js
+class MyScheduler extends Mass.MassTaskScheduler {
+  async failback() {
+    
+  }
+}
+
+class MyTask extends Mass.MassTask {
+  async executor(input, proceed, bus) {
+
+  }
+}
+
+class MyStreamTask extends Mass.MassStreamTask {
+  async streamProcessExecutor(env, bus) {
+
+  }
+}
+
+const scheduler = new MyScheduler(scheduler_cfg);
+scheduler.spawnTask(MyTask, {}).sched();
+scheduler.spawnTask(MyStreamTask, {}).sched();
+```
+
+> 建议使用第二种编码方式. 一个原因是这种书写方式代码结构清晰, 可读性高, 较容易维护.
+> 另外可以非常容易的修改或增加原有组件的行为, 而扩展开发新组件的成本也会变得很低廉.
+
+## 项目目录结构
+
+基于 Mass v2 的项目可以以如下目录结构组织代码.
+
+```
+- schedulers/ # 存放自定义的调度器类
+- tasks/ # 存放自定义的任务类
+- operators/ # 存放自定义的操作符类
+  - sources/
+  - calculators/
+  - sinks/
+- states/ # 存放自定义的状态聚合器类
+  - states/
+  - aggregators/
+- envs/ # 存放自定义的环境类
+- gens/ # 存放自定义的状态生成器类
+- components/ # 存放通用的组件内逻辑和数据结构
+- scaffold.js # 配置和组装代码
+- bootstrap.js # 入口
+```
 
 # API
 
+## Scheduler API
+## Task API
+### TaskStore API
+## Stream API
+### Source API
+### Sink API
+### Calculator API
+### State/StateAggregator API
+### Env 管道 API
+### Gen 管道 API
+
 # 注意事项
 
-- 
+## 管道回压的副作用
 
-# 开发更多流处理运算符
+考虑一个管道网中的两种连接情况:
+
+```js
+const src_1 = Mass.operators.MySQLSource.create();
+const src_2 = Mass.operators.KafkaSource.create();
+const dest_1 = Mass.operators.KafkaSink.create();
+const dest_2 = Mass.operators.ElasticsearchSink.create();
+
+const calc = env.from(src_1).compute(Mass.operators.Calculator.create());
+calc.to(dest_1);
+calc.to(dest_2);
+env.from(src_2).pipe(calc);
+```
+
+Calc 计算来自两个数据源数据, 并同步到另外两个数据存储. 下图描述了这四个管道:
+
+```
+(src_1) --->        ---> (dest_1)
+             \    /
+             (calc)
+             /    \
+(src_2) --->        ---> (dest_2)
+```
+
+假设 dest_1 的消费速度远远强于 dest_2.
+
+那么当 dest_2 发生阻塞时会发生什么?
+
+首先 dest_2 会触发回压要求 calc 降低生产速率, 紧接着 由于 calc 生产速率的下降, dest_1 得不到充分的利用将产生资源空闲.
+
+进而 calc 的生产速率降低也是一种回压信号, 告诉上游 src_1 和 src_2 放慢生产速率.
+
+最终生产速度较快的 src_2 受到 calc 回压机制的影响也放慢了生产速度.
+
+可以观察到, 一旦有一个节点阻塞, 其所处的整个管道网络都会遭受影响.
+
+一种解法是拆解 dest_1 和 dest_2, 让他们不使用一个公共的祖先.
+
+```js
+const calc = Mass.operators.Calculator.create();
+const calc_dep = Mass.operators.Calculator.create();
+
+const src_1 = Mass.operators.MySQLSource.create();
+const src_2 = Mass.operators.KafkaSource.create();
+const dest_1 = Mass.operators.KafkaSink.create();
+const dest_2 = Mass.operators.ElasticsearchSink.create();
+
+const src_1_dep = Mass.operators.MySQLSource.create();
+const src_2_dep = Mass.operators.KafkaSource.create();
+const dest_1_dep = Mass.operators.KafkaSink.create();
+const dest_2_dep = Mass.operators.ElasticsearchSink.create();
+
+env.from(src_1).compute(calc).to(dest_1);
+env.from(src_2).compute(calc).to(dest_1);
+
+env.from(src_1_dep).compute(calc_dep).to(dest_2);
+env.from(src_2_dep).compute(calc_dep).to(dest_2);
+```
+
+```
+(src_1) --->
+             \
+              (calc) ---> (dest_1)
+             /
+(src_2) --->
+
+(src_1_dep) --->
+                 \
+                  (calc_dep) ---> (dest_2)
+                 /
+(src_2_dep) --->
+```
+
+## 动态分区的问题
+
+通过 `shard` 动态分区生成的管道, 目前无法对其中的任一节点进行观察管理. 只能通过资源管理器隐式的观察所有末端处理节点.
+
+例如, 对于这样一个管道:
+
+```js
+env.from().shard().window().group();
+```
+
+由于 window.group 是通过流的元素驱动态创建的, 因此无法对 shard 后的 window 和 group 节点使用 `await` 监听其完成/异常状态.
+
+## 流节点依赖图中的异常处理
+
+一个流计算任务上下文里, 如果两个管道的公共依赖节点并没有发生异常退出, 那么其中一个管道的异常关闭不会影响其他管道的正常工作.
+
+```
+                 (mutate) ✔
+                /        \
+              /            \ 
+            /                \
+(src_1) --->           ------> (dest_1)
+            \        /
+              \    /
+              (calc) ✗
+              /    \
+            /        \
+(src_2) --->           ------> (dest_2)
+```
+
+如果 calc 发生异常退出, 因为 mutate 的存在, src_1 和 dest_1 仍然会正常工作直到遇到错误或正常结束.
+
+## 流处理任务的阻塞性质
+
+流计算任务会持续占用调度器, 直到所有末端处理节点退出. 期间调度队列中的其他任务必须等待.
+
+# 面向开发者的 API
 
 # 微观体系
 
@@ -224,12 +474,12 @@ class MeansStateAggregator extends Mass.states.StateAggregator {
 
 ```js
 Env.prototype.means = function(term_condition) {
-  return this.pipe(new Means(this, term_condition));
+  return this.pipe(new MeansEnv(this, term_condition));
 };
 ```
 
 ```js
 StateGenerator.prototype.means = function() {
-  
+  return this.addState(MeansStateAggregator, null);
 };
 ```
