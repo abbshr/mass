@@ -8,13 +8,11 @@
   "private": false,
   "dependencies": {
     "@wac/raw-redis": "^1.0.0",
-    "@wac/redis-client": "^2.0.2",
+    "@wac/redis-client": "^3.0.1",
     "chance": "^1.0.16",
     "cron-parser": "^2.5.0",
-    "p-event": "^2.1.0",
     "p-queue": "^2.4.2",
-    "safe-timers": "^1.1.0",
-    "sinek": "^6.14.0"
+    "safe-timers": "^1.1.0"
   },
   "scripts": {
     "test": "jest --detectOpenHandles"
@@ -38,6 +36,7 @@
     ]
   },
   "devDependencies": {
-    "jest": "^23.4.1"
+    "jest": "^23.4.1",
+    "p-event": "^2.1.0"
   }
 }

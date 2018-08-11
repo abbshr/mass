@@ -229,10 +229,10 @@ const src_2 = Mass.operators.KafkaSource.create();
 const dest_1 = Mass.operators.KafkaSink.create();
 const dest_2 = Mass.operators.ElasticsearchSink.create();
 
-const calc = env.from(src_1).compute(Mass.operators.Calculator.create());
-calc.to(dest_1);
-calc.to(dest_2);
-env.from(src_2).pipe(calc);
+const calc = Mass.operators.Calculator.create();
+
+env.from(src_1).compute(calc).to(dest_1);
+env.from(src_2).compute(calc).to(dest_2);
 ```
 
 Calc 计算来自两个数据源数据, 并同步到另外两个数据存储. 下图描述了这四个管道:
@@ -480,6 +480,6 @@ Env.prototype.means = function(term_condition) {
 
 ```js
 StateGenerator.prototype.means = function() {
-  return this.addState(MeansStateAggregator, null);
+  return this.use(MeansStateAggregator, null);
 };
 ```
