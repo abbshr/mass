@@ -7,7 +7,6 @@
   "license": "MIT",
   "private": false,
   "dependencies": {
-    "@wac/raw-redis": "^1.0.0",
     "@wac/redis-client": "^3.0.1",
     "chance": "^1.0.16",
     "cron-parser": "^2.5.0",
@@ -30,7 +29,6 @@
       "<rootDir>/__mocks__"
     ],
     "coverageReporters": [
-      "html",
       "text",
       "text-summary"
     ]
