@@ -2,12 +2,11 @@ const MassTaskScheduler = require("../../lib/scheduler");
 const MassTask = require("../../lib/task");
 
 describe("lib/scheduler.js", () => {
-  beforeAll(async () => {
-    await require("../../lib/redis").connect({ cfg: { schema: "client:" } });
-  });
-
-  it("should throws if cfg inst provide", () => {
-    expect(() => new MassTaskScheduler()).toThrow();
+  it("should not throws if cfg inst provide", () => {
+    let sched = null;
+    expect(() => sched = new MassTaskScheduler()).not.toThrow();
+    expect(sched.concurrency).toBe(1);
+    expect(sched.maxRetryTimes).toBe(5);
   });
 
   it("default task priority is 0", () => {
@@ -32,7 +31,6 @@ describe("lib/scheduler.js", () => {
     sched.preemptiveSchedule = jest.fn();
 
     task.on("test-sig");
-    await sched.bootstrap();
     await sched.bus.send("test-sig", { data: "test-data" });
 
     expect(sched.preemptiveSchedule).toBeCalled();
@@ -120,7 +118,6 @@ describe("lib/scheduler.js", () => {
     task.sched();
     expect(taskBefore.state).toBe(task.STATE.READY);
     expect(task.state).toBe(task.STATE.READY);
-    await sched.bootstrap();
 
     await new Promise(resolve => {
       setImmediate(() => {
@@ -146,13 +143,15 @@ describe("lib/scheduler.js", () => {
       }
     });
 
+    sched.pause();
     expect(taskBefore.state).toBe(task.STATE.PEND);
     expect(task.state).toBe(task.STATE.PEND);
     taskBefore.sched();
     task.grab();
     expect(taskBefore.state).toBe(task.STATE.READY);
     expect(task.state).toBe(task.STATE.READY);
-    await sched.bootstrap();
+
+    sched.resume();
 
     await new Promise(resolve => {
       setImmediate(() => {
@@ -184,7 +183,6 @@ describe("lib/scheduler.js", () => {
     task.grab();
     expect(taskBefore.state).toBe(task.STATE.READY);
     expect(task.state).toBe(task.STATE.READY);
-    await sched.bootstrap();
 
     await new Promise(resolve => {
       setImmediate(() => {
@@ -194,8 +192,6 @@ describe("lib/scheduler.js", () => {
       });
     });
   });
-
-  // it("task.on()");
 
   it("sched.cancel(id) should cancel the next executing of the task with the given id", async () => {
     const sched = new MassTaskScheduler({});
@@ -209,7 +205,6 @@ describe("lib/scheduler.js", () => {
     expect(task.state).toBe(task.STATE.PEND);
     task.grab();
     expect(task.state).toBe(task.STATE.READY);
-    await sched.bootstrap();
 
     await new Promise(resolve => {
       setImmediate(() => {
@@ -239,7 +234,6 @@ describe("lib/scheduler.js", () => {
     });
 
     task.sched();
-    await sched.bootstrap();
     await sched.onIdle();
     expect(store.failed).toBe(4);
     expect(task.state).toBe(task.STATE.FINISH);
@@ -263,13 +257,12 @@ describe("lib/scheduler.js", () => {
     });
 
     task.sched();
-    await sched.bootstrap();
     await sched.onIdle();
     expect(store.failed).toBe(6);
-    expect(task.state).toBe(task.STATE.FAILURE);
+    expect(task.state).toBe(task.STATE.DEAD);
   });
 
-  it("task.addChildTask(task) should add the sub-task with the whole output to schedule using the (queued) strategy before itself change to finished or failure", async () => {
+  it("task.addChildTask(task) should add the sub-task with the whole output to schedule using the (queued) strategy before itself change to finished or failure", done => {
     const sched = new MassTaskScheduler({});
 
     const subTask = sched.spawnTask(MassTask, {
@@ -278,6 +271,7 @@ describe("lib/scheduler.js", () => {
       async executor(input, proceed) {
         expect(input).toEqual({ data: "from test task" });
         proceed(input);
+        done();
       }
     });
     const task = sched.spawnTask(MassTask, {
@@ -291,11 +285,9 @@ describe("lib/scheduler.js", () => {
     task.addChildTask(subTask);
 
     task.sched();
-    await sched.bootstrap();
-    await sched.onIdle();
   });
 
-  it("task.mapChildTasks(task) should add the sub-tasks with each element in the output to schedule using the (queued) strategy before itself change to finished or failure", async () => {
+  it("task.mapChildTasks(task) should add the sub-tasks with each element in the output to schedule using the (queued) strategy before itself change to finished or failure", done => {
     const sched = new MassTaskScheduler({});
 
     const subTask = sched.spawnTask(MassTask, {
@@ -304,6 +296,7 @@ describe("lib/scheduler.js", () => {
       async executor(input, proceed) {
         expect([{ a: 1 }, { b: 2 }, { c: 3 }]).toContainEqual(input);
         proceed(input);
+        done()
       }
     });
     const task = sched.spawnTask(MassTask, {
@@ -317,7 +310,5 @@ describe("lib/scheduler.js", () => {
     task.mapChildTasks(subTask);
 
     task.sched();
-    await sched.bootstrap();
-    await sched.onIdle();
   });
 });

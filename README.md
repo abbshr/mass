@@ -96,19 +96,19 @@ scheduler.spawnTask(MyTask, {
 })
 .at_every("0 9 * * *");
 
-class MyCalculator extends Mass.operators.Calculator {
+class MyCalculator extends Mass.stream.operators.Calculator {
   
 }
 
-class MyEnv extends Mass.Env {
+class MyEnv extends Mass.stream.Env {
 
 }
 
-class MyStateAggregator extends Mass.states.StateAggregator {
+class MyStateAggregator extends Mass.stream.states.StateAggregator {
 
 }
 
-class MyGen extends Mass.Gen {
+class MyGen extends Mass.stream.Gen {
 
 }
 
@@ -224,10 +224,10 @@ scheduler.spawnTask(MyStreamTask, {}).sched();
 考虑一个管道网中的两种连接情况:
 
 ```js
-const src_1 = Mass.operators.MySQLSource.create();
-const src_2 = Mass.operators.KafkaSource.create();
-const dest_1 = Mass.operators.KafkaSink.create();
-const dest_2 = Mass.operators.ElasticsearchSink.create();
+const src_1 = Mass.stream.operators.MySQLSource.create();
+const src_2 = Mass.stream.operators.KafkaSource.create();
+const dest_1 = Mass.stream.operators.KafkaSink.create();
+const dest_2 = Mass.stream.operators.ElasticsearchSink.create();
 
 const calc = Mass.operators.Calculator.create();
 
@@ -369,7 +369,7 @@ operators.register("MySource", MySource);
 
 ```js
 // my.calculator.js
-class MyCalcualtor extends Mass.operators.Calculator {
+class MyCalcualtor extends Mass.stream.operators.Calculator {
   async calc(elem) {
 
   }
@@ -398,7 +398,7 @@ operators.register("MyCalculator", MyCalculator);
 
 ```js
 // my.sink.js
-class MySink extends Mass.operators.Sink {
+class MySink extends Mass.stream.operators.Sink {
   async produce(elems) {
 
   }
@@ -430,7 +430,7 @@ operators.register("MySink", MySink);
 环境对象由环境类 (Env) 及其子类实例化.
 
 ```js
-class MySourceEnv extends Mass.Env {
+class MySourceEnv extends Mass.stream.Env {
   constructor(executor, ancestorEnv, probeFn) {
     super(executor, ancestorEnv, probeFn);
     this._op = new this.operators.MySource(this, probeFn);
@@ -451,7 +451,7 @@ scheduler.spawnTask(MassStreamTask, {
 ## 状态聚合器
 
 ```js
-class MeansStateAggregator extends Mass.states.StateAggregator {
+class MeansStateAggregator extends Mass.stream.states.StateAggregator {
   constructor() {
     super();
     this._sum = 0;

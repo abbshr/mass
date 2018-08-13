@@ -15,7 +15,7 @@ module.exports = async () => {
   return new (class extends EventEmitter {
     async subscribe(chan) {}
     async publish(chan, data) {
-      store.emit("message", "client:mass-v2:chan", data);
+      store.emit("message", chan, data);
     }
     async hgetall(key) {
       return {};
