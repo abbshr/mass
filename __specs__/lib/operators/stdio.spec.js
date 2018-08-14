@@ -1,8 +1,8 @@
 const MassStreamTask = require("../../../lib/stream-task");
 const MassTaskScheduler = require("../../../lib/scheduler");
-const { PassThrough } = require("stream");
 
 describe("operators: stdio", () => {
+  const { PassThrough } = require("stream");
   it("should work as expected", async done => {
     const scheduler = new MassTaskScheduler();
 
