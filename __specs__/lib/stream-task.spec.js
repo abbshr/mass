@@ -27,6 +27,42 @@ describe("stream task", () => {
     streamTask.grab("data");
   });
 
+  it("a pipeline (generate -> tap -> validate) should work as expected", done => {
+    const sched = new MassTaskScheduler({});
+    sched.spawnTask(MassStreamTask, {
+      async streamProcessExecutor(env, input, bus) {
+        const pipeline =
+          env
+          .generate({ frequency: 100, limit: 20 })
+          .tap(elem => expect(elem).toEqual(expect.objectContaining({ record: 1 })))
+          .validate(elem => {
+            expect(elem).toEqual(expect.objectContaining({ record: 1 }));
+            return elem.record === 1;
+          });
+        await expect(pipeline).resolves.not.toBeInstanceOf(Error);
+        done();
+      }
+    }).sched();
+  });
+
+  it("a pipeline (generate -> tap -> validate) should work as expected", async done => {
+    const sched = new MassTaskScheduler({});
+    sched.spawnTask(MassStreamTask, {
+      async streamProcessExecutor(env, input, bus) {
+        const pipeline =
+          env
+          .generate({ frequency: 100, limit: 20, emitter() { return 2; } })
+          .tap(elem => expect(elem).toEqual(expect.objectContaining({ record: 2 })))
+          .validate(elem => {
+            expect(elem).toEqual(expect.objectContaining({ record: 2 }));
+            return elem.record === 1;
+          });
+        await expect(pipeline).rejects.toBeInstanceOf(Error);
+        done();
+      }
+    }).sched();
+  });
+
   // it("ResourceManager.prototype.free() should be called in the same event loop tick and ResourceManager.prototype.waitExtremityEnvsRelease() should not be called if task.streamProcessExecutor() throws", async () => {
   //   const sched = new MassTaskScheduler({});
   //   const streamTask = sched.spawnTask(MassStreamTask, {

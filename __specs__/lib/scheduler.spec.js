@@ -311,4 +311,17 @@ describe("lib/scheduler.js", () => {
 
     task.sched();
   });
+
+  it("mutex job should work as expected", done => {
+    const sched = new MassTaskScheduler();
+    sched
+    .spawnTask(MassTask, {
+      async executor(input, proceed, bus) {
+        expect(input).toBe("get executed privilege");
+        done();
+      }
+    })
+    .mutex("mutex")
+    .sched("get executed privilege");
+  });
 });
