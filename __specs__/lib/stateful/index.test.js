@@ -50,15 +50,15 @@ describe("stateful streaming task", () => {
     scheduler
     .spawnTask(MassStreamTask, {
       async streamProcessExecutor(env) {
-        const mycalc = env.from(env.operators.StdinSource.create(instream)).compute(MyCalculator.create());
-        mycalc.use(MySumStateAggregator);
-
-        await mycalc
-          .tap(elem => console.log(elem))
-          .validate(elem => {
-            expect(elem.record % 10).toEqual(0);
-            return elem.record % 10 === 0;
-          });
+        env
+        .from(env.operators.StdinSource.create(instream))
+        .compute(MyCalculator.create())
+          .use(MySumStateAggregator)
+        .tap(elem => console.log(elem))
+        .validate(elem => {
+          expect(elem.record % 10).toEqual(0);
+          return elem.record % 10 === 0;
+        });
       }
     }).sched();
 
