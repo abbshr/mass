@@ -1,34 +1,66 @@
 const MassStreamTask = require("../../lib/stream-task");
 const Env = require("../../lib/env");
 const MassTaskScheduler = require("../../lib/scheduler");
-const MassBus = require("../../lib/bus");
+const MassBus = require("../../lib/components/bus");
 const { EventEmitter } = require("events");
 const pEvent = require("p-event");
 
 describe("stream task", () => {
-  beforeAll(async () => {
-    await require("../../lib/redis").connect({ cfg: { schema: "client:" } });
-  });
-
   it("task.at_every() (periodic) strategy should be disabled in stream task", () => {
     const streamTask = new MassStreamTask();
     expect(() => streamTask.at_every()).toThrow();
   });
 
-  it("task.env should be an instance of Env", async () => {
+  it("task.env should be an instance of Env", done => {
     const sched = new MassTaskScheduler({});
     const streamTask = sched.spawnTask(MassStreamTask, {
       taskId: "test-stream-task",
-      async streamProcessExecutor(env, bus) {
+      async streamProcessExecutor(env, input, bus) {
         expect(env).toBeInstanceOf(Env);
         expect(env).toBeInstanceOf(Promise);
+        expect(input).toBe("data");
         expect(bus).toBeInstanceOf(MassBus);
+        done();
       },
     });
 
-    streamTask.grab();
-    await sched.bootstrap();
-    await sched.onIdle();
+    streamTask.grab("data");
+  });
+
+  it("a pipeline (generate -> tap -> validate) should work as expected", done => {
+    const sched = new MassTaskScheduler({});
+    sched.spawnTask(MassStreamTask, {
+      async streamProcessExecutor(env, input, bus) {
+        const pipeline =
+          env
+          .generate({ frequency: 100, limit: 20 })
+          .tap(elem => expect(elem).toEqual(expect.objectContaining({ record: 1 })))
+          .validate(elem => {
+            expect(elem).toEqual(expect.objectContaining({ record: 1 }));
+            return elem.record === 1;
+          });
+        await expect(pipeline).resolves.not.toBeInstanceOf(Error);
+        done();
+      }
+    }).sched();
+  });
+
+  it("a pipeline (generate -> tap -> validate) should work as expected", async done => {
+    const sched = new MassTaskScheduler({});
+    sched.spawnTask(MassStreamTask, {
+      async streamProcessExecutor(env, input, bus) {
+        const pipeline =
+          env
+          .generate({ frequency: 100, limit: 20, emitter() { return 2; } })
+          .tap(elem => expect(elem).toEqual(expect.objectContaining({ record: 2 })))
+          .validate(elem => {
+            expect(elem).toEqual(expect.objectContaining({ record: 2 }));
+            return elem.record === 1;
+          });
+        await expect(pipeline).rejects.toBeInstanceOf(Error);
+        done();
+      }
+    }).sched();
   });
 
   // it("ResourceManager.prototype.free() should be called in the same event loop tick and ResourceManager.prototype.waitExtremityEnvsRelease() should not be called if task.streamProcessExecutor() throws", async () => {
@@ -57,7 +89,7 @@ describe("stream task", () => {
     const em = new EventEmitter();
     const streamTask = sched.spawnTask(MassStreamTask, {
       taskId: "test-stream-task",
-      async streamProcessExecutor(env, bus) {
+      async streamProcessExecutor(env, input, bus) {
         pipeline_1 = env
           .from(env.operators.GeneratorSource.create({ limit: 1, frequency: 100 }))
           .compute(env.operators.TapCalculator.create(elem => console.log("PIPELINE 1 GOT:", elem)))
@@ -73,7 +105,6 @@ describe("stream task", () => {
     });
 
     streamTask.grab();
-    await sched.bootstrap();
     await pEvent(em, "ok");
 
     await pipeline_1;
