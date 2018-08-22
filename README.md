@@ -656,7 +656,7 @@ operators.register("MyCalculator", MyCalculator);
 ```js
 // my.sink.js
 class MySink extends Mass.stream.operators.Sink {
-  async produce(elems) {
+  async produce(elem) {
 
   }
 
