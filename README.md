@@ -77,7 +77,7 @@ Mass v2 在与 v1 在能力差别上, 主要表现在:
 Mass 库有一个顶层命名空间 `mass`, 其上导出了常用的核心构件及其 API.
 
 ```js
-const mass = require("@wac/mass");
+const mass = require("@wac/mass")(config);
 ```
 
 作为一个任务调度框架, Mass 的第一层结构是调度器. 所有任务都通过调度器调度执行.
@@ -571,6 +571,43 @@ scheduler.spawnTask(MyStreamTask, {}).sched();
 ```
 
 ## API
+
+### `MassTaskScheduler` 任务调度器类
+
+### `MassTask` 任务类
+
+### `MassStreamTask` 流处理任务类
+
+### `strategies` 任务级容错策略
+
+### `stream.operators` 流运算符
+
+### `stream.Env` 流环境类
+
+### `stream.Gen` 流状态生成器类
+
+### `stream.states` 流状态
+
+### `stream.fault_mode=`
+
+配置所有的运算符失败模式.
+
+### `stream.fault.mode`
+
+用于配置 `stream.fault_mode`, 有两个枚举值:
+
+- `stream.fault.mode.IGNORE`: 忽略失败情况并继续.
+- `stream.fault.mode.THROWN`: 处理失败时抛出错误, 结束流计算过程, 并触发上层容错机制 (如果存在).
+
+### `syslog` 系统日志接口
+
+通过 `config` 对象配置.
+
+### `applog/log` 应用日志接口
+
+通过 `config` 对象配置.
+
+### `config` 配置对象
 
 # Developer Handbook
 
