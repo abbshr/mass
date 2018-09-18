@@ -45,20 +45,19 @@ describe("stream task", () => {
     }).sched();
   });
 
-  it("a pipeline (generate -> tap -> validate) should work as expected", async done => {
+  it("a pipeline (generate -> tap -> validate) should work as expected", async () => {
     const sched = new MassTaskScheduler({});
     sched.spawnTask(MassStreamTask, {
       async streamProcessExecutor(env, input, bus) {
         const pipeline =
           env
-          .generate({ frequency: 100, limit: 20, emitter() { return 2; } })
+          .generate({ frequency: 100, limit: 1, emitter() { return 2; } })
           .tap(elem => expect(elem).toEqual(expect.objectContaining({ record: 2 })))
           .validate(elem => {
             expect(elem).toEqual(expect.objectContaining({ record: 2 }));
             return elem.record === 1;
           });
         await expect(pipeline).rejects.toBeInstanceOf(Error);
-        done();
       }
     }).sched();
   });

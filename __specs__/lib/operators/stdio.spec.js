@@ -1,5 +1,6 @@
 const MassStreamTask = require("../../../lib/stream-task");
 const MassTaskScheduler = require("../../../lib/scheduler");
+const util = require("util");
 
 describe("operators: stdio", () => {
   const { PassThrough } = require("stream");
@@ -18,13 +19,13 @@ describe("operators: stdio", () => {
           .tap(elem => {
             expect(elem.record).toEqual(expect.stringMatching(/fst|sec/));
             expect(elem.record).not.toEqual(expect.stringContaining("quit"));
-            buf.push(elem.record);
+            buf.push(util.inspect(elem.record, { colors: true }));
           })
           .to(env.operators.StdoutSink.create(outstream));
 
         const recvstr = outstream.read().toString("utf8");
-        expect(recvstr).toEqual(expect.stringContaining(`"record": "${buf[0]}"`));
-        expect(recvstr).toEqual(expect.stringContaining(`"record": "${buf[1]}"`));
+        expect(recvstr).toEqual(expect.stringContaining(`record: ${buf[0]}`));
+        expect(recvstr).toEqual(expect.stringContaining(`record: ${buf[1]}`));
         done();
       }
     })
