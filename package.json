@@ -1,5 +1,5 @@
 {
-  "name": "mass",
+  "name": "@wac/mass",
   "version": "2.0.0",
   "description": "an universal data processing and task scheduling framework",
   "main": "index.js",
