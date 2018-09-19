@@ -30,6 +30,9 @@ module.exports = async () => {
     async set(key, ...args) {
       return "OK";
     }
+    async hmset() {
+      return "OK";
+    }
     multi() {
       return new Transaction();
     }

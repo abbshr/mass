@@ -1,24 +1,20 @@
-const MassStreamTask = require("../../../lib/stream-task");
-const MassTaskScheduler = require("../../../lib/scheduler");
+const { stream: { Env } } = require("../../..")();
 
 describe("operators: select", () => {
   it("should work as expected", async () => {
-    const scheduler = new MassTaskScheduler();
+    const env = new Env(null);
+    const selector = env.operators.SelectCalculator.create(elem => elem.record % 2);
 
-    scheduler
-    .spawnTask(MassStreamTask, {
-      async streamProcessExecutor(env) {
-        let i = 0;
+    let i = 0;
+    env.generate({ limit: 1, frequency: 100, emitter() { return 0; } }).select(selector);
 
-        await env
-          .generate({ limit: 4, frequency: 100, emitter() { return i++; } })
-          .select(elem => elem.record % 2)
-          .validate(elem => {
-            expect(elem.record % 2).not.toBe(0);
-            return true;
-          });
-      }
-    })
-    .sched();
+    await env
+      .generate({ limit: 4, frequency: 100, emitter() { return i++; } })
+      .select(selector)
+      .select(elem => elem.record % 2)
+      .validate(elem => {
+        expect(elem.record % 2).not.toBe(0);
+        return true;
+      });
   });
 });

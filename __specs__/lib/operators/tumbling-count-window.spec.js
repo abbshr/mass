@@ -1,6 +1,6 @@
 const { stream: { Env } } = require("../../..")();
 
-describe("operators: tumbling time window", () => {
+describe("operators: tumbling count window", () => {
   it("should work as expected", async () => {
     const env = new Env(null);
     const epoch = (new Date()).setHours(0, 0, 0, 0)
@@ -75,17 +75,10 @@ describe("operators: tumbling time window", () => {
       },
     ]
 
-    const timewindow = env.operators.TumblingTimeWindowCalculator.create({
-      span: "PT15M",
+    const countwindow = env.operators.TumblingCountWindowCalculator.create({
+      capacity: 3,
     })
-    .groupBy(elem => elem.record.WAX_SDK_NAME)
-    .record({
-      costTime(curr, elem) {
-        return curr + elem.record.COST_TIME;
-      },
-    }, {
-      costTime: 0
-    });
+    .reduce(data => data.record);
 
     await env
     .generate({
@@ -95,9 +88,9 @@ describe("operators: tumbling time window", () => {
         return dataset.shift();
       },
     })
-    .window(timewindow)
+    .window(countwindow)
     .validate(elem => {
-      expect([5, 30]).toContain(elem.record.state.get("costTime"));
+      expect(elem.record.MONITOR_TYPE).toBe("appCrash");
       return true;
     })
   });
