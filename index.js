@@ -39,6 +39,15 @@ module.exports = masscfg => {
           THROWN: "thrown",
         },
       },
+
+      error: {
+        type: {
+          noretry: "noretry",
+          retriable: "retriable",
+          ignorable: "ignorable",
+          throwable: "throwable",
+        },
+      },
     },
 
     // 配置
