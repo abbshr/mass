@@ -54,7 +54,6 @@ describe("stateful streaming task", () => {
         .from(env.operators.StdinSource.create(instream))
         .compute(MyCalculator.create())
           .use(MySumStateAggregator)
-        .tap(elem => console.log(elem))
         .validate(elem => {
           expect(elem.record % 10).toEqual(0);
           return elem.record % 10 === 0;
