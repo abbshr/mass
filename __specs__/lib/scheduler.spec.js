@@ -193,7 +193,7 @@ describe("lib/scheduler.js", () => {
     });
   });
 
-  it("sched.cancel(id) should cancel the next executing of the task with the given id", async () => {
+  it("task.cancel() should cancel the next executing of the task with the given id", async () => {
     const sched = new MassTaskScheduler({});
     const task = sched.spawnTask(MassTask, {
       taskId: "test",
@@ -209,7 +209,8 @@ describe("lib/scheduler.js", () => {
     await new Promise(resolve => {
       setImmediate(() => {
         expect(task.state).toBe(task.STATE.RUN);
-        sched.cancel(task.taskId);
+        // sched.cancel(task.taskId);
+        task.cancel();
         expect(task.state).toBe(task.STATE.CANCEL);
         resolve(null);
       });
