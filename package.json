@@ -1,6 +1,6 @@
 {
   "name": "@wac/mass",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "an universal data processing and task scheduling framework",
   "main": "index.js",
   "author": "ran <rankong@wacai.com>",
