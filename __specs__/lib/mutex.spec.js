@@ -64,7 +64,7 @@ jest.mock("../../lib/syslog", () => ({
 
 const Mutex = require("../../lib/components/mutex")
 
-describe("lib/mutex", () => {
+describe("lib/mutex acquire failure story", () => {
   it("#acquire() should failed when mutex was occupied", async () => {
     const resourceId = "resource"
     const mutex = new Mutex(resourceId)
