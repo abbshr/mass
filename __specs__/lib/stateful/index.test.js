@@ -1,7 +1,8 @@
 const MassStreamTask = require("../../../lib/stream-task");
 const MassTaskScheduler = require("../../../lib/scheduler");
-const { Calculator } = require("../../../lib/operators");
+const { Calculator, Sink } = require("../../../lib/operators");
 const { StateAggregator } = require("../../../lib/states");
+const { stream: { Env } } = require("../../..")();
 
 class MyCalculator extends Calculator {
   constructor(env) {
@@ -42,6 +43,13 @@ class MySumStateAggregator extends StateAggregator {
   }
 }
 
+class TestSink extends Sink {
+  async produce(elem) {
+    this.produce = () => null
+    throw new Error("test")
+  }
+}
+
 describe("stateful streaming task", () => {
   it("calc-state should work as expected", async () => {
     const { PassThrough } = require("stream");
@@ -78,15 +86,16 @@ describe("stateful streaming task", () => {
     await scheduler.onIdle();
   });
 
-  // it("calc-reduce should work as expected", async () => {
-  //   const scheduler = new MassTaskScheduler();
-  //   scheduler
-  //   .spawnTask(MassStreamTask, {
-  //     async streamProcessExecutor(env) {
-  //       env.from()
-  //         .tap().use()
-  //         .to();
-  //     }
-  //   }).sched();
-  // });
+  it("sink#discard() call should not throw", async () => {
+    const env = new Env(null);
+    const { PassThrough } = require("stream");
+    const instream = new PassThrough();
+
+    instream.write("1");
+    setImmediate(() => instream.write("quit"));
+
+    await expect(env
+      .from(env.operators.StdinSource.create(instream))
+      .to(TestSink.create())).resolves.toBeNull();
+  });
 });
