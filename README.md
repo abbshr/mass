@@ -78,7 +78,7 @@ Mass v2 在与 v1 在能力差别上, 主要表现在:
 Mass 库有一个顶层命名空间 `mass`, 其上导出了常用的核心构件及其 API.
 
 ```js
-const mass = require("@wac/mass")();
+const mass = require("mass")();
 ```
 
 作为一个任务调度框架, Mass 的第一层结构是调度器. 所有任务都通过调度器调度执行.
@@ -164,7 +164,7 @@ OK, 到此为止, 你已经可以使用 Mass 来创建一个任务了. 这里有
 
 ```js
 // 一个定期下载文件并做格式化的任务
-const { MassTask, MassTaskScheduler } = require("@wac/mass");
+const { MassTask, MassTaskScheduler } = require("mass");
 
 const scheduler = new MassTaskScheduler();
 const downloadTask = scheduler.spawnTask(MassTask, {
@@ -192,7 +192,7 @@ MassTask 提供了一种 **子任务** 能力, 可以最大程度减少因网络
 
 首先定义下载书名表的任务:
 ```js
-const { MassTask, MassTaskScheduler } = require("@wac/mass");
+const { MassTask, MassTaskScheduler } = require("mass");
 
 const scheduler = new MassTaskScheduler();
 const downloadBooklistTask = scheduler.spawnTask(MassTask, {

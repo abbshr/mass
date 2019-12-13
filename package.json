@@ -1,13 +1,13 @@
 {
-  "name": "@wac/mass",
+  "name": "mass",
   "version": "2.0.6",
   "description": "an universal data processing and task scheduling framework",
   "main": "index.js",
-  "author": "ran <rankong@wacai.com>",
+  "author": "ran <abbshrsoufii@gmail.com>",
   "license": "MIT",
   "private": false,
   "dependencies": {
-    "@wac/redis-client": "^3.0.1",
+    "ioredis": "^3.0.1",
     "chance": "^1.0.16",
     "cron-parser": "^2.5.0",
     "p-queue": "^2.4.2",
